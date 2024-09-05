@@ -1,0 +1,270 @@
+#include <iostream>
+#include <direct.h>  // For _mkdir, _chdir, _getcwd
+#include <io.h>      // For _findfirst, _findnext, _findclose
+#include <string>
+#include <conio.h>   // For _getch()
+
+using namespace std;
+
+#define MAX_PATH_LENGTH 260
+
+// Function prototypes
+void main_menu();
+void display_file_menu();
+void list_files_all();
+void list_files_by_extension(const string& ext);
+void list_files_by_pattern(const string& pattern);
+void create_directory(const string& dir_name);
+void change_directory_menu();
+void move_to_parent();
+void move_to_root();
+void move_to_specific(const string& path);
+string get_current_directory();
+
+// Main function
+int main() {
+    main_menu();  // Start the program with the main menu
+    return 0;
+}
+
+// Function definitions
+
+// Function to display the main menu
+void main_menu() {
+    int choice;
+    while (true) {
+        cout << "                 Main Menu\n";
+        cout << "----------------------------------------------\n";
+        cout << "1. To Display List of Files\n";
+        cout << "2. To Create New Directory\n";
+        cout << "3. To Change the Working Directory\n";
+        cout << "4. Exit\n";
+        cout << "Enter the number: ";
+        cin >> choice;
+
+        switch (choice) {
+        case 1:
+            display_file_menu();
+            break;
+        case 2: {
+            string dir_name;
+            cout << "\nEnter the Directory name: ";
+            cin >> dir_name;
+            create_directory(dir_name);
+            break;
+        }
+        case 3:
+            change_directory_menu();
+            break;
+        case 4:
+            exit(0);
+        default:
+            cout << "Invalid choice. Please try again.\n";
+        }
+    }
+}
+
+// Function to display file listing menu
+void display_file_menu() {
+    int list_choice;
+    cout << "          List File Detail\n";
+    cout << "---------------------------------------------\n";
+    cout << "1. List All Files\n";
+    cout << "2. List of Extension Files\n";
+    cout << "3. List of Name Wise\n";
+    cout << "Enter the Number: ";
+    cin >> list_choice;
+
+    if (list_choice == 1) {
+        list_files_all();
+    } else if (list_choice == 2) {
+        string ext;
+        cout << "Enter extension (e.g., .txt): ";
+        cin >> ext;
+        list_files_by_extension(ext);
+    } else if (list_choice == 3) {
+        string pattern;
+        cout << "Enter file name pattern (e.g., file*.*): ";
+        cin >> pattern;
+        list_files_by_pattern(pattern);
+    }
+}
+
+// Function to list all files in the current directory
+void list_files_all() {
+    struct _finddata_t file_info;
+    intptr_t handle = _findfirst("*.*", &file_info);
+
+    if (handle == -1) {
+        cout << "No files found in the current directory." << endl;
+        return;
+    }
+
+    int file_count = 0;
+    cout << "List of All files (*.*) Files\n";
+    cout << "---------------------------------------------\n";
+
+    do {
+        if (!(file_info.attrib & _A_SUBDIR)) {  // Exclude directories
+            cout << file_info.name << endl;
+            file_count++;
+        }
+    } while (_findnext(handle, &file_info) == 0);
+
+    _findclose(handle);
+
+    cout << "\nTotal files: " << file_count << endl;
+    cout << "Press any key to continue..." << endl;
+    _getch();  // Wait for the user to press a key
+}
+
+// Function to list files by a specific extension
+void list_files_by_extension(const string& ext) {
+    struct _finddata_t file_info;
+    string search_pattern = "*" + ext;
+    intptr_t handle = _findfirst(search_pattern.c_str(), &file_info);
+
+    if (handle == -1) {
+        cout << "No files with extension " << ext << " found." << endl;
+        return;
+    }
+
+    int file_count = 0;
+    cout << "List of " << ext << " Files\n";
+    cout << "---------------------------------------------\n";
+
+    do {
+        if (!(file_info.attrib & _A_SUBDIR)) {  // Exclude directories
+            cout << file_info.name << endl;
+            file_count++;
+        }
+    } while (_findnext(handle, &file_info) == 0);
+
+    _findclose(handle);
+
+    cout << "\nTotal " << ext << " files: " << file_count << endl;
+    cout << "Press any key to continue..." << endl;
+    _getch();  // Wait for the user to press a key
+}
+
+// Function to list files by a specific pattern
+void list_files_by_pattern(const string& pattern) {
+    struct _finddata_t file_info;
+    intptr_t handle = _findfirst(pattern.c_str(), &file_info);
+
+    if (handle == -1) {
+        cout << "No files matching pattern " << pattern << " found." << endl;
+        return;
+    }
+
+    int file_count = 0;
+    cout << "List of Files matching pattern: " << pattern << endl;
+    cout << "---------------------------------------------\n";
+
+    do {
+        if (!(file_info.attrib & _A_SUBDIR)) {  // Exclude directories
+            cout << file_info.name << endl;
+            file_count++;
+        }
+    } while (_findnext(handle, &file_info) == 0);
+
+    _findclose(handle);
+
+    cout << "\nTotal files matching pattern: " << file_count << endl;
+    cout << "Press any key to continue..." << endl;
+    _getch();  // Wait for the user to press a key
+}
+
+// Function to create a directory
+void create_directory(const string& dir_name) {
+    if (_mkdir(dir_name.c_str()) == 0) {
+        cout << dir_name << " Directory Successfully Created" << endl;
+    } else {
+        cout << "Failed to create directory or it already exists." << endl;
+    }
+    cout << "Press any key to continue..." << endl;
+    _getch();  // Wait for the user to press a key
+}
+
+// Function to display change directory menu
+void change_directory_menu() {
+    string current_directory = get_current_directory();
+    cout << "\nCurrent Directory: " << current_directory << endl;
+    cout << "                       Change Directory\n";
+    cout << "----------------------------------------------------\n";
+    cout << "1. Step by Step Backward\n";
+    cout << "2. Go to Root Directory\n";
+    cout << "3. Forward Directory\n";
+    cout << "Enter the number: ";
+    int dir_choice;
+    cin >> dir_choice;
+
+    if (dir_choice == 1) {
+        move_to_parent();
+    } else if (dir_choice == 2) {
+        move_to_root();
+    } else if (dir_choice == 3) {
+        string dir_name;
+        cout << "Please enter the Directory Name: ";
+        cin >> dir_name;
+        move_to_specific(dir_name);
+    }
+}
+
+// Function to move to the parent directory
+void move_to_parent() {
+    if (_chdir("..") == 0) {
+        string current_directory = get_current_directory();
+        cout << "Moved to parent directory.\nCurrent Directory: " << current_directory << endl;
+    } else {
+        cout << "Failed to move to parent directory." << endl;
+    }
+    cout << "Press any key to continue..." << endl;
+    _getch();  // Wait for the user to press a key
+}
+
+// Function to move to the root directory
+void move_to_root() {
+    char buffer[MAX_PATH_LENGTH];
+    if (_getcwd(buffer, MAX_PATH_LENGTH) != NULL) {
+        string path = buffer;
+        size_t pos = path.find_last_of("\\");
+        if (pos != string::npos) {
+            path = path.substr(0, pos + 1);  // Get the root directory (e.g., "C:\")
+            if (_chdir(path.c_str()) == 0) {
+                cout << "Moved to root directory: " << path << endl;
+            } else {
+                cout << "Failed to move to root directory." << endl;
+            }
+        } else {
+            cout << "Failed to determine root directory." << endl;
+        }
+    } else {
+        cout << "Failed to get current directory." << endl;
+    }
+    cout << "Press any key to continue..." << endl;
+    _getch();  // Wait for the user to press a key
+}
+
+// Function to move to a specific directory
+void move_to_specific(const string& path) {
+    if (_chdir(path.c_str()) == 0) {
+        string current_directory = get_current_directory();
+        cout << "Current directory: " << current_directory << endl;
+    } else {
+        cout << "Failed to change directory to: " << path << endl;
+    }
+    cout << "Press any key to continue..." << endl;
+    _getch();  // Wait for the user to press a key
+}
+
+// Function to get the current working directory
+string get_current_directory() {
+    char buffer[MAX_PATH_LENGTH];
+    if (_getcwd(buffer, MAX_PATH_LENGTH) != NULL) {
+        return string(buffer);
+    } else {
+        return string("Unable to retrieve current directory.");
+    }
+}
+
